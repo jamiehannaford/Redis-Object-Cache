@@ -1,4 +1,6 @@
 <?php
+require __DIR__ . '/vendor/autoload.php';
+
 /**
  * Plugin Name: Redis Object Cache
  * Author:      Eric Mann & Erick Hitter
@@ -326,18 +328,16 @@ class WP_Object_Cache {
 		if ( defined( 'WP_REDIS_BACKEND_DB' ) && WP_REDIS_BACKEND_DB ) {
 			$redis['database'] = WP_REDIS_BACKEND_DB;
 		}
-		if ( ( defined( 'WP_REDIS_SERIALIZER' ) ) ) {
-			$redis['serializer'] =  WP_REDIS_SERIALIZER;
-		} else {
-			$redis['serializer'] =  Redis::SERIALIZER_PHP;
-		}
 
-		// Use Redis PECL library.
 		try {
-			$this->redis = new Redis();
-			$this->redis->connect( $redis['host'], $redis['port'] );
-			$this->redis->setOption( Redis::OPT_SERIALIZER, $redis['serializer'] );
-			
+			$params = [
+				'tcp://' . getenv('REDIS_MASTER_SERVICE_HOST') . ':' . getenv('REDIS_MASTER_SERVICE_PORT') . '?alias=master',
+				'tcp://' . getenv('REDIS_SLAVE_SERVICE_HOST') . ':' . getenv('REDIS_SLAVE_SERVICE_PORT') . '?alias=slave',
+			];
+			$options = ['replication' => true];
+
+			$this->redis = new Predis\Client($params, $options);
+
 			if ( isset( $redis['auth'] ) ) {
 				$this->redis->auth( $redis['auth'] );
 			}
@@ -347,7 +347,7 @@ class WP_Object_Cache {
 			}
 
 			$this->redis_connected = true;
-		} catch ( RedisException $e ) {
+		} catch ( Predis\PredisException $e ) {
 			// When Redis is unavailable, fall back to the internal back by forcing all groups to be "no redis" groups
 			$this->no_redis_groups = array_unique( array_merge( $this->no_redis_groups, $this->global_groups ) );
 			$this->redis_connected = false;
@@ -701,7 +701,7 @@ class WP_Object_Cache {
 		?><p>
 			<strong><?php $this->_i18n( '_e', 'Cache Hits:' ); ?></strong> <?php echo $this->_i18n( 'number_format_i18n', $this->cache_hits, false ); ?><br />
 			<strong><?php $this->_i18n( '_e', 'Cache Misses:' ); ?></strong> <?php echo $this->_i18n( 'number_format_i18n', $this->cache_misses, false ); ?><br />
-			<strong><?php $this->_i18n( '_e', 'Using Redis?' ); ?></strong> 
+			<strong><?php $this->_i18n( '_e', 'Using Redis?' ); ?></strong>
 			<?php echo $this->can_redis() ? $this->_i18n( '__', 'yes' ) : $this->_i18n( '__', 'no' );
 			?><br />
 		</p>
@@ -853,7 +853,7 @@ class WP_Object_Cache {
 	 * Since this class may run befor the i18n methods are loaded in WP, we'll make sure they
 	 * exist before using them. Most require a text domain, some don't, so the second param allows
 	 * specifiying which type is being called.
-	 * 
+	 *
 	 * @param  string $method The WP method to pass the string through if it exists.
 	 * @param  string $string The string to internationalize.
 	 * @param  bool   $domain Whether or not to pass the text domain to the method as well.
