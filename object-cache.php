@@ -7,6 +7,23 @@ require __DIR__ . '/vendor/autoload.php';
  * Version:     1.0
  */
 
+function encode($value)
+{
+   if (is_array($value)) {
+      return 'a' . json_encode($value);
+   }
+   return json_encode($value);	
+}
+
+function decode($value)
+{
+   if (strpos($value, 'a{') !== false) {
+     $value = substr($value, 1);
+     return json_decode($value, true);
+   }
+   return json_decode($value);
+}
+
 /**
  * Adds a value to cache.
  *
@@ -25,7 +42,7 @@ require __DIR__ . '/vendor/autoload.php';
 function wp_cache_add($key, $value, $group = '', $expiration = 0)
 {
     global $wp_object_cache;
-    return $wp_object_cache->add($key, $value, $group, $expiration);
+    return $wp_object_cache->add($key, encode($value), $group, $expiration);
 }
 
 /**
@@ -107,7 +124,7 @@ function wp_cache_flush($delay = 0)
 function wp_cache_get($key, $group = '')
 {
     global $wp_object_cache;
-    return $wp_object_cache->get($key, $group);
+    return decode($wp_object_cache->get($key, $group));
 }
 
 /**
@@ -179,7 +196,7 @@ function wp_cache_init()
 function wp_cache_replace($key, $value, $group = '', $expiration = 0)
 {
     global $wp_object_cache;
-    return $wp_object_cache->replace($key, $value, $group, $expiration);
+    return $wp_object_cache->replace($key, encode($value), $group, $expiration);
 }
 
 /**
@@ -199,7 +216,7 @@ function wp_cache_replace($key, $value, $group = '', $expiration = 0)
 function wp_cache_set($key, $value, $group = '', $expiration = 0)
 {
     global $wp_object_cache;
-    return $wp_object_cache->set($key, $value, $group, $expiration);
+    return $wp_object_cache->set($key, encode($value), $group, $expiration);
 }
 
 /**
@@ -590,7 +607,7 @@ class WP_Object_Cache
         foreach ($groups as $group => $keys) {
             if (in_array($group, $this->no_redis_groups) || ! $this->can_redis()) {
                 foreach ($keys as $key) {
-                    $cache[ $this->build_key($key, $group) ] = $this->get($key, $group);
+                    $cache[ $this->build_key($key, $group) ] = decode($this->get($key, $group));
                 }
             } else {
                 // Reformat arguments as expected by Redis
