@@ -346,8 +346,8 @@ class WP_Object_Cache
 
         try {
             $params = [
-                'tcp://' . getenv('REDIS_MASTER_SERVICE_HOST') . ':' . getenv('REDIS_MASTER_SERVICE_PORT') . '?alias=master',
-                'tcp://' . getenv('REDIS_SLAVE_SERVICE_HOST') . ':' . getenv('REDIS_SLAVE_SERVICE_PORT') . '?alias=slave',
+                'tcp://redis-master:6379?alias=master',
+                'tcp://redis-slave:6379?alias=slave',
             ];
             $options = ['replication' => true];
 
