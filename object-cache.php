@@ -364,7 +364,7 @@ class WP_Object_Cache
         try {
             $params = [
                 'tcp://redis-master:6379?alias=master',
-                'tcp://redis-slave:6379?alias=slave',
+                'tcp://localhost:6379?alias=slave',
             ];
             $options = ['replication' => true];
 
